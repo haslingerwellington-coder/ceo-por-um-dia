@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+
+<meta charset="UTF-8">
+<title>CEO por um Dia - Rancho do Pica Pau</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Rye&family=Patrick+Hand&display=swap" rel="stylesheet">
+
+<style>
+
+body{
+margin:0;
+font-family:'Patrick Hand', cursive;
+background:url("fundo.png");
+background-size:cover;
+background-position:center;
+}
+
+/* LOADING */
+
+#loadingScreen{
+position:fixed;
+width:100%;
+height:100%;
+background:url("loading.png");
+background-size:cover;
+display:flex;
+flex-direction:column;
+align-items:center;
+justify-content:center;
+}
+
+#loadingScreen::before{
+content:"";
+position:absolute;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.6);
+}
+
+.loadingTitle{
+font-family:'Rye';
+font-size:55px;
+color:#ffd54f;
+z-index:2;
+text-align:center;
+}
+
+.loadingBar{
+width:400px;
+height:25px;
+background:#222;
+border-radius:20px;
+overflow:hidden;
+margin-top:40px;
+z-index:2;
+}
+
+.loadingFill{
+height:100%;
+width:0%;
+background:linear-gradient(90deg,#ffd54f,#ff9800);
+}
+
+#startButton{
+margin-top:30px;
+padding:15px 40px;
+font-size:22px;
+background:#27ae60;
+border:none;
+border-radius:10px;
+cursor:pointer;
+display:none;
+z-index:2;
+color:white;
+font-weight:bold;
+}
+
+
+/* GAME */
+
+#game{
+width:1000px;
+margin:auto;
+padding-top:20px;
+display:none;
+}
+
+h1{
+font-family:'Rye', cursive;
+font-size:55px;
+color:#fff8dc;
+text-align:center;
+text-shadow:3px 3px 8px #000;
+}
+
+/* HUD */
+
+.hud{
+display:flex;
+justify-content:space-around;
+background:rgba(88,48,20,0.9);
+border:4px solid #3a1f0e;
+border-radius:20px;
+padding:12px;
+color:#fff;
+font-size:20px;
+}
+
+.story{
+text-align:center;
+font-size:28px;
+color:white;
+text-shadow:2px 2px 6px black;
+margin-top:30px;
+font-weight:bold;
+}
+
+/* CHAT */
+
+.chat{
+display:flex;
+flex-direction:column;
+gap:14px;
+margin-top:30px;
+}
+
+.message{
+display:flex;
+align-items:flex-end;
+gap:12px;
+}
+
+.message.right{
+justify-content:flex-end;
+}
+
+.avatar{
+width:70px;
+height:70px;
+border-radius:50%;
+border:3px solid #5a2e12;
+}
+
+.bubble{
+max-width:420px;
+padding:14px 18px;
+border-radius:18px;
+font-size:20px;
+font-weight:bold;
+}
+
+.left .bubble{ background:white; }
+.right .bubble{ background:#dcf8c6; }
+
+/* OPTIONS */
+
+.options button{
+display:block;
+margin:15px auto;
+width:60%;
+padding:15px;
+font-size:21px;
+border:3px solid #8a4b1f;
+border-radius:20px;
+background:linear-gradient(#ffd54f,#ffb300);
+cursor:pointer;
+font-weight:bold;
+}
+
+.options button:hover{
+transform:scale(1.05);
+background:linear-gradient(#ffe082,#ffc107);
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- LOADING -->
+
+<div id="loadingScreen">
+
+<h1 class="loadingTitle">
+CEO POR UM DIA<br>
+RANCHO DO PICA PAU
+</h1>
+
+<div class="loadingBarBox">
+<div id="loadingBar"></div>
+</div>
+
+<button id="startButton" onclick="showIntro()">INICIAR JOGO</button>
+
+</div>
+
+<!-- GAME -->
+
+<div id="game">
+
+<h1>Rancho do Pica Pau</h1>
+
+<div class="hud">
+
+<div>💰 Dinheiro<br><span id="money">100</span></div>
+<div>⭐ Reputação<br><span id="rep">50</span></div>
+<div>👥 Clientes<br><span id="clients">15</span></div>
+<div>📖 Capítulo<br><span id="chapter">1</span></div>
+
+</div>
+
+<div id="intro">
+
+<div class="story">O Rancho do Pica Pau já foi o restaurante mais famoso da cidade.</div>
+<div class="story">Os pastéis eram lendários.</div>
+<div class="story">Agora você será o CEO por um dia.</div>
+
+<button onclick="startGame()">COMEÇAR HISTÓRIA</button>
+
+</div>
+
+<div id="gameplay" style="display:none">
+
+<div id="story" class="story"></div>
+
+<div class="chat">
+
+<div class="message left">
+<img src="images.jfif" class="avatar">
+<div id="dialog1" class="bubble"></div>
+</div>
+
+<div class="message right">
+<div id="dialog2" class="bubble"></div>
+<img src="cliente.png" class="avatar">
+</div>
+
+</div>
+
+<div id="options" class="options"></div>
+
+</div>
+
+</div>
+
+<script>
+
+/* LOADING */
+
+let load=0
+
+let loading=setInterval(function(){
+
+load+=2
+document.getElementById("loadingBar").style.width=load+"%"
+
+if(load>=100){
+clearInterval(loading)
+document.getElementById("startButton").style.display="block"
+}
+
+},40)
+
+function showIntro(){
+document.getElementById("loadingScreen").style.display="none"
+document.getElementById("game").style.display="block"
+}
+
+/* GAME */
+
+let money=100
+let reputation=50
+let clients=15
+let chapter=1
+let score=0
+
+const chapters=[
+
+{story:"Dia 1 — O rancho está vazio.",dialog1:"Precisamos trazer clientes.",dialog2:"Se tivesse promoção eu viria mais.",options:[
+{text:"Criar promoção",m:-10,r:15,c:15},
+{text:"Melhorar atendimento",m:10,r:10,c:8},
+{text:"Não fazer nada",m:0,r:-10,c:-10}
+]},
+
+{story:"Alguns clientes começam a voltar.",dialog1:"Boa decisão!",dialog2:"Gostei do atendimento.",options:[
+{text:"Criar delivery",m:-20,r:20,c:20},
+{text:"Fazer propaganda",m:20,r:15,c:15},
+{text:"Aumentar preços",m:-5,r:-10,c:-10}
+]},
+
+{story:"O rancho começa a encher.",dialog1:"Precisamos inovar.",dialog2:"Quero novos sabores!",options:[
+{text:"Criar sabores",m:10,r:20,c:15},
+{text:"Contratar funcionário",m:-30,r:10,c:10},
+{text:"Manter igual",m:0,r:-5,c:-5}
+]},
+
+{story:"Influenciador aparece.",dialog1:"Se ele postar...",dialog2:"Estou gravando!",options:[
+{text:"Dar pastel grátis",m:-15,r:20,c:20},
+{text:"Ignorar",m:5,r:-10,c:-5},
+{text:"Cobrar normal",m:20,r:-5,c:-5}
+]},
+
+{story:"Cozinha apertada.",dialog1:"Precisamos melhorar.",dialog2:"Tá difícil trabalhar.",options:[
+{text:"Comprar equipamentos",m:-50,r:15,c:20},
+{text:"Treinar equipe",m:20,r:10,c:10},
+{text:"Ignorar",m:0,r:-10,c:-10}
+]},
+
+{story:"Fila grande.",dialog1:"O movimento voltou!",dialog2:"Mas está demorando.",options:[
+{text:"Criar caixa rápido",m:10,r:15,c:15},
+{text:"Contratar equipe",m:-40,r:20,c:20},
+{text:"Ignorar",m:0,r:-10,c:-10}
+]},
+
+{story:"Clientes querem novidade.",dialog1:"Precisamos inovar.",dialog2:"Quero pastel diferente!",options:[
+{text:"Pastel gigante",m:-10,r:20,c:20},
+{text:"Combo pastel+refri",m:25,r:15,c:10},
+{text:"Nada novo",m:0,r:-5,c:-5}
+]},
+
+{story:"Festival gastronômico.",dialog1:"Grande oportunidade.",dialog2:"Vocês vão participar?",options:[
+{text:"Participar",m:20,r:25,c:20},
+{text:"Divulgar online",m:-10,r:10,c:10},
+{text:"Ignorar",m:0,r:-10,c:-10}
+]},
+
+{story:"Avaliações online.",dialog1:"Temos comentários.",dialog2:"Vou avaliar!",options:[
+{text:"Responder clientes",m:0,r:15,c:10},
+{text:"Pedir avaliação",m:5,r:10,c:10},
+{text:"Ignorar",m:0,r:-10,c:-5}
+]},
+
+{story:"Rancho famoso.",dialog1:"Estamos crescendo.",dialog2:"Sempre cheio!",options:[
+{text:"Expandir cardápio",m:-30,r:20,c:20},
+{text:"Manter igual",m:0,r:5,c:5},
+{text:"Abrir filial",m:60,r:25,c:25}
+]},
+
+{story:"Equipe cansada.",dialog1:"Precisamos motivar.",dialog2:"Estamos exaustos.",options:[
+{text:"Dar bônus",m:-10,r:15,c:10},
+{text:"Contratar mais gente",m:-40,r:10,c:15},
+{text:"Ignorar",m:0,r:-10,c:-10}
+]},
+
+{story:"Concorrente abre pastelaria.",dialog1:"Nova concorrência.",dialog2:"Vocês vão perder!",options:[
+{text:"Mega promoção",m:-15,r:20,c:25},
+{text:"Melhorar qualidade",m:-20,r:15,c:15},
+{text:"Ignorar",m:0,r:-10,c:-10}
+]},
+
+{story:"Delivery bombando.",dialog1:"Pedidos não param.",dialog2:"Chega rápido!",options:[
+{text:"Contratar entregador",m:-30,r:20,c:20},
+{text:"Limitar pedidos",m:0,r:-10,c:-10},
+{text:"Automatizar pedidos",m:20,r:15,c:15}
+
+]},
+
+{story:"Cidade inteira conhece.",dialog1:"Estamos famosos.",dialog2:"Adoro esse lugar.",options:[
+{text:"Expandir restaurante",m:0,r:25,c:25},
+{text:"Criar marca forte",m:20,r:20,c:20},
+{text:"Manter simples",m:10,r:5,c:5}
+]},
+
+{story:"Último dia como CEO.",dialog1:"Qual será o futuro?",dialog2:"Estamos esperando!",options:[
+{text:"Criar franquia nacional",m:50,r:30,c:30},
+{text:"Virar restaurante grande",m:40,r:20,c:20},
+{text:"Manter lanchonete raiz",m:0,r:10,c:10}
+]}
+
+]
+
+function updateHUD(){
+
+document.getElementById("money").innerText=money
+document.getElementById("rep").innerText=reputation
+document.getElementById("clients").innerText=clients
+document.getElementById("chapter").innerText=chapter
+
+}
+
+function startGame(){
+document.getElementById("intro").style.display="none"
+document.getElementById("gameplay").style.display="block"
+nextChapter()
+}
+
+function nextChapter(){
+
+let c=chapters[chapter-1]
+
+document.getElementById("story").innerHTML=c.story
+document.getElementById("dialog1").innerHTML="👨‍🍳 Dono: "+c.dialog1
+document.getElementById("dialog2").innerHTML="🧑 Cliente: "+c.dialog2
+
+let html=""
+
+c.options.forEach(opt=>{
+html+=`<button onclick="choose(${opt.m},${opt.r},${opt.c})">${opt.text}</button>`
+})
+
+document.getElementById("options").innerHTML=html
+
+}
+
+function choose(m,r,c){
+
+money+=m
+reputation+=r
+clients+=c
+
+score += (r*2)+(c*2)+m
+
+chapter++
+
+updateHUD()
+
+if(chapter>chapters.length){
+endGame()
+}else{
+nextChapter()
+}
+
+}
+
+function endGame(){
+
+score+=money+reputation*2+clients*2
+
+let final=""
+let rank=""
+
+if(score>1700){final="🏆 O Rancho virou uma franquia nacional!";rank="👑 CEO LENDÁRIO"}
+else if(score>1300){final="🚀 O Rancho virou o restaurante mais famoso da cidade!";rank="⭐ CEO VISIONÁRIO"}
+else if(score>1100){final="👍 O Rancho cresceu muito.";rank="🙂 CEO COMPETENTE"}
+else if(score>900){final="⚠ O Rancho sobreviveu com dificuldades.";rank="😬 CEO APRENDIZ"}
+else{final="💀 O Rancho faliu...";rank="💸 CEO DESASTRE"}
+
+
+document.getElementById("story").innerHTML="<strong>"+final+"</strong>"
+document.getElementById("dialog1").innerHTML="Pontuação: "+score
+document.getElementById("dialog2").innerHTML=rank
+
+document.getElementById("options").innerHTML="<button onclick='location.reload()'>Jogar novamente</button>"
+
+}
+
+updateHUD()
+
+</script>
+
+</body>
+</html>
